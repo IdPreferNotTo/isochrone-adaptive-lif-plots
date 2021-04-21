@@ -6,6 +6,161 @@ import matplotlib.gridspec as gs
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 def expand_isochrone(isochrone):
+    v_in_range = True
+    while v_in_range:
+        on_isochrone = False
+        # Check if return T time from this (v,a) back to the isochrone is T = ISI
+        while not on_isochrone:
+            t = first_passage_time_last_point_isochrone_to_isochrone(isochrone, dt)
+            if abs(t - isi) > 0.001 * isi:
+                v_new, a_new = isochrone[-1]
+                v_fix, a_fix = isochrone[-2]
+                if t > isi:
+                    print("ISI too long")
+                    v, a = move_to_reduce_return_time(v_new, a_new, v_fix, a_fix)
+                else:
+                    print("ISI too short")
+                    v, a = move_to_increase_return_time(v_new, a_new, v_fix, a_fix)
+                isochrone[-1] = [v, a]
+            else:
+                # Return time on point
+                print("on point")
+                on_isochrone = True
+                # Find a candidate for a new point on the isochrone
+                v_candidate, a_candidate, v_in_range = expand_isochrone_by_one_point(isochrone)
+                # If is v-component is outside [0, 1] stop the loop
+                isochrone.append([v_candidate, a_candidate])
+    return isochrone
+
+
+def move_to_reduce_return_time(v0, a0, v_fix , a_fix):
+    # Consider two points (v, a) and (v_fix, a_fix). The latter one is know to lie on the isochrone. Define (v_fix, a_fix)
+    # as the center of a circle so that the point (v, a) can be described by radius and angle. Change the angle of (v, a)
+    # so that the return time to the isochrone is reduced.
+
+    # The flow of (v_fix, a_fix) will pass the circle with radius 0.02 at some angle. Find that angle. Moving the
+    # point (v,a) closer to the angle phi_fix will eventually reduces the return time.
+    dx = 0.
+    v = v_fix
+    a = a_fix
+    while dx < 0.02:
+        v, a, spike = alif.forward(v, a)
+        if spike == False:
+            dx = np.sqrt((v-v_fix)**2 + (a-a_fix)**2)
+        if spike == True:
+            dx = np.sqrt((v + 1 - v_fix)**2 + (a - delta_a - a_fix)**2)
+    v_fix2 = v
+    a_fix2 = a
+    dv_fix = v_fix2 - v_fix
+    da_fix = a_fix2 - a_fix
+    phi_fix = atan2(da_fix, dv_fix)
+
+
+    # Determine the angle between phi between (v_fix, a_fix) and (v, a).
+    dv = v0 - v_fix
+    da = a0 - a_fix
+    r = np.sqrt(dv ** 2 + da ** 2)
+    phi = atan2(da, dv)
+    # Calculate difference between phi_fix and phi
+    dphi = phi - phi_fix
+    # Move phi so that the difference is reduced
+    v_new = v_fix + r*cos(phi - 0.02*dphi)
+    a_new = a_fix + r*sin(phi - 0.02*dphi)
+    return v_new, a_new
+
+
+def move_to_increase_return_time(v0, a0, v_fix, a_fix):
+    dx = 0.
+    v = v_fix
+    a = a_fix
+    while dx < 0.02:
+        v, a, spike = alif.forward(v, a)
+        if spike == False:
+            dx = np.sqrt((v - v_fix) ** 2 + (a - a_fix) ** 2)
+        if spike == True:
+            dx = np.sqrt((v + 1 - v_fix) ** 2 + (a - delta_a - a_fix) ** 2)
+    v_fix2 = v
+    a_fix2 = a
+    dv_fix = v_fix2 - v_fix
+    da_fix = a_fix2 - a_fix
+    phi_fix = atan2(da_fix, dv_fix)
+
+    # Determine the angle between phi between (v_fix, a_fix) and (v, a).
+    dv = v0 - v_fix
+    da = a0 - a_fix
+    r = np.sqrt(dv ** 2 + da ** 2)
+    phi = atan2(da, dv)
+    # Calculate difference between phi_fix and phi
+    dphi = phi - phi_fix
+    # Move phi so that the difference is increased
+    v_new = v_fix + r * cos(phi + 0.02 * dphi)
+    a_new = a_fix + r * sin(phi + 0.02 * dphi)
+    return v_new, a_new
+
+
+def initial_pair(v_lc, a_lc, ISI, dt):
+    # Find a point above the LC that has the same phase as (v_lc, a_lc)
+    v_candidate = v_lc + 0.01
+    a_candidate = a_lc + 0.01
+    while True:
+        t = 0
+        passed_isochrone = False
+        v = v_candidate
+        a = a_candidate
+        # Integrate v,a until the isochrone is passed
+        while not passed_isochrone:
+            v_tmp = v
+            a_tmp = a
+            v, a, spike = alif.forward(v, a)
+            t += dt
+            passed_isochrone = intersect(v_tmp, a_tmp, v, a, v_lc, a_lc, v_candidate, a_candidate)
+        # If the isochrone is passed save the passage time T.
+        T = t
+        # If T is too large or too small change (v, a) accordingly
+        if abs(T - ISI) > 0.0001 * isi:
+            if T > ISI:
+                v_candidate, a_candidate = move_to_reduce_return_time(v_candidate, a_candidate, v_lc, a_lc)
+            if T < ISI:
+                v_candidate, a_candidate = move_to_increase_return_time(v_candidate, a_candidate, v_lc, a_lc)
+        # If T matches the deterministic ISI end.
+        else:
+            v_plus_iso = v_candidate
+            a_plus_iso = a_candidate
+            break
+
+    # Find a point below the LC that has the same phase as (v_lc, a_lc)
+    v_candidate = v_lc - 0.01
+    a_candidate = a_lc - 0.01
+    while True:
+        t = 0
+        passed_isochrone = False
+        v = v_candidate
+        a = a_candidate
+        # Integrate v,a until the isochrone is passed
+        while not passed_isochrone:
+            v_tmp = v
+            a_tmp = a
+            v, a, spike = alif.forward(v, a)
+            t += dt
+            passed_isochrone = intersect(v_tmp, a_tmp, v, a, v_lc, a_lc, v_candidate, a_candidate)
+        # If the isochrone is passed save the passage time T.
+        T = t
+        # If T is too large or too small change (v, a) accordingly
+        if abs(T - ISI) > 0.0001 * isi:
+            if T > ISI:
+                v_candidate, a_candidate = move_to_reduce_return_time(v_candidate, a_candidate, v_lc, a_lc)
+            if T < ISI:
+                v_candidate, a_candidate = move_to_increase_return_time(v_candidate, a_candidate, v_lc, a_lc)
+        # If T matches the deterministic ISI end.
+        else:
+            v_minus_iso = v_candidate
+            a_minus_iso = a_candidate
+            break
+
+    return [v_plus_iso, a_plus_iso], [v_minus_iso, a_minus_iso]
+
+
+def expand_isochrone_by_one_point(isochrone):
     # Returns (v, a, bool v in [0, 1]?). (v,a) is a candidate for a pooint on the isochrone. the third value indicates
     # whether v is in the interval [0, 1].
     v1, a1 = isochrone[-1]
@@ -21,25 +176,6 @@ def expand_isochrone(isochrone):
         return v_candidate, a_candidate, False
     else:
         return v_candidate, a_candidate, True
-
-
-def adjust_point_to_match_isochrone(v_new, a_new, v_fix, a_fix, t, isi):
-    dv = v_new - v_fix
-    da = a_new - a_fix
-    r = np.sqrt(dv ** 2 + da ** 2)
-    phi = atan2(da, dv)  # return value of atan2 \in [-pi, pi]
-    if t > isi:
-        print("but ISI too long")
-        # Return time too large
-        v = v_fix + r * cos(phi - 0.02 * np.pi)
-        a = a_fix + r * sin(phi - 0.02 * np.pi)
-        return v, a
-    elif t < isi:
-        print("but ISI too short")
-        # Return time too small
-        v = a_fix + r * cos(phi + 0.02 * np.pi)
-        a = a_fix + r * sin(phi + 0.02 * np.pi)
-        return v, a
 
 
 def first_passage_time_last_point_isochrone_to_isochrone(isochrone, dt):
@@ -91,17 +227,17 @@ def intersect(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2):
 
 
 class adaptive_leaky_if():
-    def __init__(self, mu, gamma, tau_a, delta_a, v_r, v_t, dt):
+    def __init__(self, mu, tau_a, delta_a, v_r, v_t, dt):
         self.mu = mu
-        self.gamma = gamma
         self.tau_a = tau_a
         self.delta_a = delta_a
         self.v_r = v_r
         self.v_t = v_t
         self.dt = dt
 
+
     def forward(self, v, a):
-        v += (self.mu - self.gamma * v - a) * self.dt
+        v += (self.mu - v - a) * self.dt
         a += (-a / self.tau_a) * self.dt
         spike = False
         if v > self.v_t:
@@ -110,6 +246,7 @@ class adaptive_leaky_if():
             spike = True
         return v, a, spike
 
+
     def forward_for_T(self, v, a, T):
         t = 0
         while (t < T):
@@ -117,8 +254,9 @@ class adaptive_leaky_if():
             t += self.dt
         return v, a
 
+
     def backward(self, v, a):
-        v -= (self.mu - self.gamma * v - a) * self.dt
+        v -= (self.mu - v - a) * self.dt
         a -= (-a / self.tau_a) * self.dt
         reset = False
         if v < self.v_r:
@@ -126,6 +264,7 @@ class adaptive_leaky_if():
             a -= self.delta_a
             reset = True
         return v, a, reset
+
 
     def backward_for_T(self, v, a, T):
         t = T
@@ -136,21 +275,15 @@ class adaptive_leaky_if():
                 return None, None
         return v, a
 
+
     def limit_cycle(self):
-        t: float = 0
         v: float = 0
         a: float = 0
-
         spikes: int = 0
         while (spikes < 100):
-            v += (self.mu - self.gamma * v - a) * self.dt
-            a += (-a / self.tau_a) * self.dt
-            t += self.dt
-            if v > self.v_t:
-                v = self.v_r
-                a += self.delta_a
+            v, a, spike = self.forward(v, a)
+            if spike:
                 spikes += 1
-
         t = 0
         v_s = []
         a_s = []
@@ -159,40 +292,25 @@ class adaptive_leaky_if():
             v_s.append(v)
             a_s.append(a)
             t_s.append(t)
-
-            v += (self.mu - self.gamma * v - a) * self.dt
-            a += (-a / self.tau_a) * self.dt
-            t += self.dt
-            if v > self.v_t:
-                v_s.append(v)
-                a_s.append(a)
-                t_s.append(t)
+            v, a, spike = self.forward(v, a)
+            if spike:
                 return [v_s, a_s, t_s]
 
+
     def period(self):
-        t: float = 0
         v: float = 0
         a: float = 0
-
         spikes: int = 0
         while (spikes < 100):
-            v += (self.mu - self.gamma * v - a) * self.dt
-            a += (-a / self.tau_a) * self.dt
-            t += self.dt
-            if v > self.v_t:
-                v = self.v_r
-                a += self.delta_a
+            v, a, spike = self.forward(v, a)
+            if spike:
                 spikes += 1
-
         t = 0
         spikes = 0
-        while (spikes < 1000):
-            v += (self.mu - self.gamma * v - a) * self.dt
-            a += (-a / self.tau_a) * self.dt
-            t += self.dt
-            if v > self.v_t:
-                v = self.v_r
-                a += self.delta_a
+        while (spikes < 100):
+            v, a, spike = self.forward(v, a)
+            t += dt
+            if spike:
                 spikes += 1
         return t / spikes
 
@@ -200,16 +318,15 @@ class adaptive_leaky_if():
 if __name__ == "__main__":
     # Initialize Adaptive leaky IF model
     mu: float = 5.0
-    gamma: float = 1.0
-    D: float = 0.1
     tau_a: float = 2.0
     delta_a: float = 1.0
 
-    v_res: float = 0
-    v_thr: float = 1
-    dt: float = 0.0001
-    alif = adaptive_leaky_if(mu, gamma, tau_a, delta_a, v_res, v_thr, dt)
+    v_res: float = 0.
+    v_thr: float = 1.
+    dt: float = 0.00005
+    alif = adaptive_leaky_if(mu, tau_a, delta_a, v_res, v_thr, dt)
     isi = alif.period()
+    print(isi)
     v_lc, a_lc, ts = alif.limit_cycle()
 
     # Initialize Plot
@@ -221,199 +338,60 @@ if __name__ == "__main__":
     ax.set_ylabel("$a$")
     ax.plot(v_lc, a_lc, c="k")
     axins.plot(v_lc, a_lc, c="k")
-    # Chose any point in phasespace and integrate forward until close to the LC
-    v = 0.1  # dont chose 0.00
-    a = 2.8  # dont chose 0.00
-    ax.scatter(v, a, ec="C3", fc="w", s=100, zorder=5)
-    delta_a = 1
-    delta_v = 1
-    while delta_v > 0.005 and delta_a > 0.005:
-        v_tmp = v
-        a_tmp = a
-        v, a = alif.forward_for_T(v, a, isi)
-        delta_v = abs(v - v_tmp) / v_tmp
-        delta_a = abs(a - a_tmp) / a_tmp
 
-    # Save the point that is close to the limit cycle
-    v_left = v
-    a_left = a
-    # Let this point evolve for a few more periods to get ON the limit cycle
-    for i in range(10):
-        v, a = alif.forward_for_T(v, a, isi)
-    v_lc = v
-    a_lc = a
-    # Interpolate v_right, a_right, so that (v_left, a_left), (v_lc, a_lc) and (v_right, a_right) are on the same line
-    v_right = v_lc + (v_lc - v_left)
-    a_right = a_lc + (a_lc - a_left)
+    twopi = len(v_lc)
+    pihalf = int(twopi/4)
+    pi = int(twopi/2)
+    pithreehalf = int(3*twopi/4)
 
-    # Split the isochrone into two parts. Below/left and ontop/right of the LC.
-    isochrone_right = [[v_lc, a_lc], [v_right, a_right]]
-    isochrone_left = [[v_lc, a_lc], [v_left, a_left]]
+    phases = [v_lc[pihalf], a_lc[pihalf]], [v_lc[pi], a_lc[pi]], [v_lc[pithreehalf], a_lc[pithreehalf]]
+    for v_lc0, a_lc0 in phases[1:2]:
+        [v_right, a_right], [v_left, a_left] = initial_pair(v_lc0, a_lc0, isi, dt)
+        # Split the isochrone into two parts. Below/left and ontop/right of the LC.
+        isochrone_right = [[v_lc0, a_lc0], [v_right, a_right]]
+        isochrone_left = [[v_lc0, a_lc0], [v_left, a_left]]
 
-    on_isochrone = False
-    while not on_isochrone:
-        t = first_passage_time_last_point_isochrone_to_isochrone(isochrone_right, dt)
-        if abs(t - isi) > 0.001 * isi:
-            v1, a1 = isochrone_right[-1]
-            v0, a0 = isochrone_right[-2]
-            dv = v1 - v0
-            da = a1 - a0
-            r = np.sqrt(dv ** 2 + da ** 2)
-            phi = atan2(da, dv)  # return value of atan2 \in [-pi, pi]
-            if t > isi:
-                print("but ISI to long")
-                # Return time too large
-                v = v0 + r * cos(phi - 0.02 * np.pi)
-                a = a0 + r * sin(phi - 0.02 * np.pi)
-            elif t < isi:
-                print("but ISI too short")
-                # Return time too small
-                v = v0 + r * cos(phi + 0.02 * np.pi)
-                a = a0 + r * sin(phi + 0.02 * np.pi)
-            isochrone_right[-1] = [v, a]
-        else:
-            # Return time on point
-            print("and its in point")
-            on_isochrone = True
+        # Plot (v_left, a_left), (v_lc, a_lc) and (v_right, a_right)
+        #ax.scatter(v_left, a_left, c="C0", zorder=5)
+        #ax.scatter(v_lc0, a_lc0, c="C0", zorder=5)
+        #ax.scatter(v_right, a_right, c="C0", zorder=5)
 
-    on_isochrone = False
-    while not on_isochrone:
-        t = first_passage_time_last_point_isochrone_to_isochrone(isochrone_left, dt)
-        if abs(t - isi) > 0.001 * isi:
-            v1, a1 = isochrone_left[-1]
-            v0, a0 = isochrone_left[-2]
-            dv = v1 - v0
-            da = a1 - a0
-            r = np.sqrt(dv ** 2 + da ** 2)
-            phi = atan2(da, dv)  # return value of atan2 \in [-pi, pi]
-            if t > isi:
-                print("but ISI to long")
-                # Return time too large
-                v = v0 + r * cos(phi + 0.02 * np.pi)
-                a = a0 + r * sin(phi + 0.02 * np.pi)
-            elif t < isi:
-                print("but ISI too short")
-                # Return time too small
-                v = v0 + r * cos(phi - 0.02 * np.pi)
-                a = a0 + r * sin(phi - 0.02 * np.pi)
-            isochrone_left[-1] = [v, a]
-            t = 0
-        else:
-            # Return time on point
-            print("and its in point")
-            on_isochrone = True
+        axins.scatter(v_left, a_left, c="C0", zorder=5)
+        axins.scatter(v_lc0, a_lc0, c="C0", zorder=5)
+        axins.scatter(v_right, a_right, c="C0", zorder=5)
+        axins.set_xlim([0.9 * v_lc0, 1.1 * v_lc0])
+        axins.set_ylim([0.99 * a_lc0, 1.01 * a_lc0])
 
-    # Plot (v_left, a_left), (v_lc, a_lc) and (v_right, a_right)
-    ax.scatter(v_left, a_left, c="C0", zorder=5)
-    ax.scatter(v_lc, a_lc, c="C0", zorder=5)
-    ax.scatter(v_right, a_right, c="C0", zorder=5)
 
-    axins.scatter(v_left, a_left, c="C0", zorder=5)
-    axins.scatter(v_lc, a_lc, c="C0", zorder=5)
-    axins.scatter(v_right, a_right, c="C0", zorder=5)
-    axins.set_xlim([0.9 * v_lc, 1.1 * v_lc])
-    axins.set_ylim([0.99 * a_lc, 1.01 * a_lc])
+        # THIS IS WHERE EVERTHING HAPPENS!!!
+        isochrone_right = expand_isochrone(isochrone_right)
+        print("SWITCHING ISOCHRONES")
+        isochrone_left = expand_isochrone(isochrone_left)
 
-    # Check if (v_right, a_right) is actually on the isochrone, i.e. when the right part of the
-    # presumed isochrone is passed.
-    while True:
-        t = 0
-        on_isochrone = False
-        # Find a candidate for a new point on the isochrone
-        v_candidate, a_candidate, v_in_range = expand_isochrone(isochrone_right)
-        # If is v-component is outside [0, 1] stop the loop
-        if not v_in_range:
-            break
-        isochrone_right.append([v_candidate, a_candidate])
-        # Check if return T time from this (v,a) back to the isochrone is T = ISI
-        while not on_isochrone:
-            t = first_passage_time_last_point_isochrone_to_isochrone(isochrone_right, dt)
-            if abs(t - isi) > 0.001 * isi:
-                v1, a1 = isochrone_right[-1]
-                v0, a0 = isochrone_right[-2]
-                dv = v1 - v0
-                da = a1 - a0
-                r = np.sqrt(dv ** 2 + da ** 2)
-                phi = atan2(da, dv)  # return value of atan2 \in [-pi, pi]
-                if t > isi:
-                    print("but ISI to long")
-                    # Return time too large
-                    v = v0 + r * cos(phi - 0.02 * np.pi)
-                    a = a0 + r * sin(phi - 0.02 * np.pi)
-                elif t < isi:
-                    print("but ISI too short")
-                    # Return time too small
-                    v = v0 + r * cos(phi + 0.02 * np.pi)
-                    a = a0 + r * sin(phi + 0.02 * np.pi)
-                isochrone_right[-1] = [v, a]
-                t = 0
-            else:
-                # Return time on point
-                print("and its in point")
-                ax.scatter(v_candidate, a_candidate, c="k")
-                axins.scatter(v_candidate, a_candidate, c="k")
-                on_isochrone = True
+        # Check if Isochrone is good
+        v, a = isochrone_right[-1]
+        for i in range(5):
+            ax.scatter(v, a, c="C3", zorder=4)
+            axins.scatter(v, a, c="C3")
+            v, a = alif.forward_for_T(v, a, isi)
 
-    # Check if Isochrone is good
-    v, a = isochrone_right[-1]
-    for i in range(6):
-        ax.scatter(v, a, c="C3", zorder=6)
-        axins.scatter(v, a, c="C3")
-        v, a = alif.forward_for_T(v, a, isi)
-    #ax.plot([x[0] for x in isochrone_right], [x[1] for x in isochrone_right])
+        v, a = isochrone_left[-1]
+        for i in range(6):
+            ax.scatter(v, a, c="C3", zorder=4)
+            axins.scatter(v, a, c="C3")
+            v, a = alif.forward_for_T(v, a, isi)
 
-    # Turn the left part of the Isochrone
-    print("SWITCHING ISOCHRONES")
+        # Combine both Isochrones to a single list
+        isochrone = isochrone_left[::-1] + isochrone_right
+        ax.plot([x[0] for x in isochrone], [x[1] for x in isochrone])
 
-    while True:
-        t = 0
-        on_isochrone = False
-        v_candidate, a_candidate, v_in_range = expand_isochrone(isochrone_left)
-        if not v_in_range:
-            break
-        isochrone_left.append([v_candidate, a_candidate])
-
-        # Let the point (v_cand, a_cand) evolve until it hits the presumed isochrone
-        while not on_isochrone:
-            t = first_passage_time_last_point_isochrone_to_isochrone(isochrone_left, dt)
-            if abs(t - isi) > 0.001 * isi:
-                v1, a1 = isochrone_left[-1]
-                v0, a0 = isochrone_left[-2]
-                dv = v1 - v0
-                da = a1 - a0
-                r = np.sqrt(dv ** 2 + da ** 2)
-                phi = atan2(da, dv)  # return value of atan2 \in [-pi, pi]
-                if t > isi:
-                    print("but ISI to long")
-                    # Return time too large
-                    v = v0 + r * cos(phi + 0.02 * np.pi)
-                    a = a0 + r * sin(phi + 0.02 * np.pi)
-                    isochrone_left[-1] = [v, a]
-                    t = 0
-                elif t < isi:
-                    print("but ISI too short")
-                    # Return time too small
-                    v = v0 + r * cos(phi - 0.02 * np.pi)
-                    a = a0 + r * sin(phi - 0.02 * np.pi)
-                    isochrone_left[-1] = [v, a]
-                    t = 0
-            else:
-                # Return time on point
-                print("and its in point")
-                ax.scatter(v_candidate, a_candidate, c="k")
-                axins.scatter(v_candidate, a_candidate, c="k")
-                on_isochrone = True
-
-    v, a = isochrone_left[-1]
-    for i in range(6):
-        ax.scatter(v, a, c="C3", zorder=6)
-        axins.scatter(v, a, c="C3")
-        v, a = alif.forward_for_T(v, a, isi)
-    #ax.plot([x[0] for x in isochrone_left], [x[1] for x in isochrone_left])
-
-    isochrone = isochrone_left + isochrone_right
-    ax.plot([x[0] for x in isochrone], [x[1] for x in isochrone])
+    # Write Isochrone to file
     home = os.path.expanduser("~")
+    file_str = home + "/Data/isochrones/isochrones_file_mu{:.2f}.dat".format(mu)
+    with open(file_str, "w") as f:
+        for v, a in isochrone:
+            f.write("{:.4f} {:.4f} \n".format(v, a))
+
     ax.grid(True, ls="--")
-    plt.savefig(home + "/Data/isochrones/isochrone_double_check.pdf", transparent=True)
+    plt.savefig(home + "/Data/isochrones/Isochrone_mu{:.2f}.pdf".format(mu))
     plt.show()
