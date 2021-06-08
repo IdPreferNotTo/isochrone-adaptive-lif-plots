@@ -3,9 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class stochastic_adaptive_leaky_if():
-    def __init__(self, mu, gamma, tau_a, delta_a, D, v_r, v_t, dt):
+    def __init__(self, mu, tau_a, delta_a, D, v_r, v_t, dt):
         self.mu = mu
-        self.gamma = gamma
         self.tau_a = tau_a
         self.delta_a = delta_a
         self.D = D
@@ -14,8 +13,18 @@ class stochastic_adaptive_leaky_if():
         self.dt = dt
 
     def forward(self, v, a):
+        v += (self.mu - v - a) * self.dt
+        a += (-a / self.tau_a) * self.dt
+        spike = False
+        if v > self.v_t:
+            v = self.v_r
+            a += self.delta_a
+            spike = True
+        return v, a, spike
+
+    def forward_stochastic(self, v, a):
         xi = np.random.normal(0, 1)
-        v += (self.mu - self.gamma * v - a) * self.dt + np.sqrt(2*D*dt)*xi
+        v += (self.mu - v - a) * self.dt + np.sqrt(2*D*self.dt)*xi
         a += (-a / self.tau_a) * self.dt
         spike = False
         if v > self.v_t:
@@ -31,41 +40,14 @@ class stochastic_adaptive_leaky_if():
             t += self.dt
         return v, a
 
-    def backward(self, v, a):
-        v -= (self.mu - self.gamma * v - a) * self.dt
-        a -= (-a / self.tau_a) * self.dt
-        reset = False
-        if v < self.v_r:
-            v = self.v_t
-            a -= self.delta_a
-            reset = True
-        return v, a, reset
-
-    def backward_for_T(self, v, a, T):
-        t = T
-        while (t > 0):
-            v, a, spike = self.backward(v, a)
-            t -= self.dt
-            if a < 0 or v > v_thr:
-                return None, None
-        return v, a
-
     def limit_cycle(self):
-        t: float = 0
         v: float = 0
         a: float = 0
-
         spikes: int = 0
         while (spikes < 100):
-            xi = np.random.normal(0, 1)
-            v += (self.mu - self.gamma * v - a) * self.dt + np.sqrt(2*D*dt)*xi
-            a += (-a / self.tau_a) * self.dt
-            t += self.dt
-            if v > self.v_t:
-                v = self.v_r
-                a += self.delta_a
+            v, a, spike = self.forward(v, a)
+            if spike:
                 spikes += 1
-
         t = 0
         v_s = []
         a_s = []
@@ -74,45 +56,9 @@ class stochastic_adaptive_leaky_if():
             v_s.append(v)
             a_s.append(a)
             t_s.append(t)
-
-            xi = np.random.normal(0, 1)
-            v += (self.mu - self.gamma * v - a) * self.dt + np.sqrt(2 * D * dt) * xi
-            a += (-a / self.tau_a) * self.dt
-            t += self.dt
-            if v > self.v_t:
-                v_s.append(v)
-                a_s.append(a)
-                t_s.append(t)
+            v, a, spike = self.forward(v, a)
+            if spike:
                 return [v_s, a_s, t_s]
-
-    def period(self):
-        t: float = 0
-        v: float = 0
-        a: float = 0
-
-        spikes: int = 0
-        while (spikes < 100):
-            xi = np.random.normal(0, 1)
-            v += (self.mu - self.gamma * v - a) * self.dt + np.sqrt(2 * D * dt) * xi
-            a += (-a / self.tau_a) * self.dt
-            t += self.dt
-            if v > self.v_t:
-                v = self.v_r
-                a += self.delta_a
-                spikes += 1
-
-        t = 0
-        spikes = 0
-        while (spikes < 1000):
-            xi = np.random.normal(0, 1)
-            v += (self.mu - self.gamma * v - a) * self.dt + np.sqrt(2 * D * dt) * xi
-            a += (-a / self.tau_a) * self.dt
-            t += self.dt
-            if v > self.v_t:
-                v = self.v_r
-                a += self.delta_a
-                spikes += 1
-        return t / spikes
 
 
 def intersect(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2):
@@ -141,7 +87,6 @@ def intersect(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2):
 if __name__ == "__main__":
     # Initialize Adaptive leaky IF model
     mu: float = 5.0
-    gamma: float = 1.0
     D: float = 0.1
     tau_a: float = 2.0
     delta_a: float = 1.0
@@ -150,8 +95,10 @@ if __name__ == "__main__":
     v_thr: float = 1
     dt: float = 0.0001
 
-    alif = stochastic_adaptive_leaky_if(mu, gamma, tau_a, delta_a, D, v_res, v_thr, dt)
-    isi = alif.period()
+    phase:float = 1*np.pi/2 #1.57. 3.14, 4.71
+
+    alif = stochastic_adaptive_leaky_if(mu, tau_a, delta_a, D, v_res, v_thr, dt)
+    print("Get limit cycle")
     v_lc, a_lc, ts = alif.limit_cycle()
 
     v = v_lc[50]
@@ -159,8 +106,8 @@ if __name__ == "__main__":
     ISIs = []
     t = 0
     spikes = 0
-    while spikes < 5_000:
-        v, a, spike = alif.forward(v, a)
+    while spikes < 100:
+        v, a, spike = alif.forward_stochastic(v, a)
         t += dt
         if spike == True:
             print(spikes)
@@ -171,16 +118,19 @@ if __name__ == "__main__":
     v = v_lc[50]
     a = a_lc[50]
     ISIs_iso = []
+    V_iso_pass = []
+    A_iso_pass = []
     t = 0
     spikes = 0
     home = os.path.expanduser("~")
-    isochrone = np.loadtxt(home + "/Data/isochrones/isochrones_file.dat")
-    has_spiked = False
-    while spikes < 5_000:
+    isochrone = np.loadtxt(home + "/Data/isochrones/isochrones_file_mu5.00_{:.2f}.dat".format(phase))
+
+    ref_steps = 0
+    while spikes < 100:
         # Let the point (v, a) evolve until it hits the presumed isochrone
         v_before = v
         a_before = a
-        v, a, spike = alif.forward(v, a)
+        v, a, spike = alif.forward_stochastic(v, a)
         if spike == False:
             v_after = v
             a_after = a
@@ -189,25 +139,31 @@ if __name__ == "__main__":
             a_after = a - delta_a
             has_spiked = True
         t += dt
+        ref_steps += 1
         # For every segment of the isochrone check if this segment and the segment that describes
         # the change of v, a ((v_tmp, a_tmp), (v, a)) intersect.
         for (v_iso0, a_iso0), (v_iso1, a_iso1) in zip(isochrone[:-1], isochrone[1:]):
+            if v_iso0 == 1 and v_iso1 == 0:
+                continue
+            if v_iso0 == 0 and v_iso1 == 1:
+                continue
             passed_isochrone = intersect(v_before, a_before, v_after, a_after, v_iso0, a_iso0, v_iso1, a_iso1)
-            if passed_isochrone and has_spiked:
+            if passed_isochrone and ref_steps > 2000:
                 print(spikes)
-                has_spiked = False
-                spiked = False
+                ref_steps = 0
                 spikes += 1
                 ISIs_iso.append(t)
+                V_iso_pass.append(v_after)
+                A_iso_pass.append(a_after)
                 t = 0
 
-    file_str = home + "/Data/isochrones/ISI_thr.dat"
+    file_str = home + "/Data/isochrones/ISI_thr_D{:.2f}_{:.2f}.dat".format(D, phase)
     with open(file_str, "w") as file:
         for isi in ISIs:
             file.write("{:.8f} \n".format(isi))
 
-    file_str = home + "/Data/isochrones/ISI_iso.dat"
+    file_str = home + "/Data/isochrones/ISI_iso_D{:.2f}_{:.2f}.dat".format(D, phase)
     with open(file_str, "w") as file:
-        for isi in ISIs_iso:
-            file.write("{:.8f} \n".format(isi))
+        for isi, v, a in zip(ISIs_iso, V_iso_pass, A_iso_pass):
+            file.write("{:.8f} {:.4f} {:.4f}\n".format(isi, v, a))
 

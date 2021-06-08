@@ -21,10 +21,14 @@ def k_corr(data1, data2, k):
 
 if __name__ == "__main__":
     home = os.path.expanduser("~")
-    ISIs_thr = np.loadtxt(home + "/Data/isochrones/ISI_thr.dat")
-    ISIs_iso = np.loadtxt(home + "/Data/isochrones/ISI_iso.dat")
-    data_thr2 = np.loadtxt(home + "/Data/SCC/LIF/data/mu5.00_taua2.0_Delta2.0_taun0.000_Dn0.00e+00_Dw1.00e-03.txt")
-    ISIs_thr2, x ,y, z = np.transpose(data_thr2)
+    phase = 1*np.pi/2 #1.57, 3.14, 4.71
+    D = 0.01
+    #ISIs_thr = np.loadtxt(home + "/Data/isochrones/ISI_thr_D{:.1f}_phi{:.2f}.dat".format(D, phase))
+    #ISIs_iso = np.loadtxt(home + "/Data/isochrones/ISI_iso_D{:.1f}_phi{:.2f}.dat".format(D, phase))
+
+    ISIs_thr = np.loadtxt(home + "/Data/isochrones/ISI_thr_D{:.2f}_{:.2f}.dat".format(D, phase))
+    data_iso = np.loadtxt(home + "/Data/isochrones/ISI_iso_D{:.2f}_{:.2f}.dat".format(D, phase))
+    ISIs_iso, v_s, a_s = np.transpose(data_iso)
 
     mean_ISI_thr = np.mean(ISIs_thr)
     mean_ISI_iso = np.mean(ISIs_iso)
@@ -33,7 +37,7 @@ if __name__ == "__main__":
     var_ISI_iso = np.var(ISIs_iso)
 
     print(mean_ISI_thr, var_ISI_thr)
-    print(mean_ISI_iso, var_ISI_iso, 2*0.1*mean_ISI_iso)
+    print(mean_ISI_iso, var_ISI_iso)
 
 
     k_corr_ISI_thr = []
@@ -47,17 +51,22 @@ if __name__ == "__main__":
     fig = plt.figure(tight_layout=True, figsize=(4, 6 / 2))
     gs = gs.GridSpec(1, 1)
     ax = fig.add_subplot(gs[:])
-    axins = inset_axes(ax, width="50%", height="40%", loc=4)
+    axins1 = inset_axes(ax, width="50%", height="40%", loc=4)
+    axins2 = inset_axes(ax, width="50%", height="40%", loc=2)
     ax.scatter(ks, k_corr_ISI_thr, label=r"Threshold", zorder=2)
     ax.scatter(ks, k_corr_ISI_iso, label=r"Isochrone", zorder=2)
     ax.axhline(0, ls="--", c="C7", zorder=1)
-    ax.set_ylim([-0.3, 0.2])
+    ax.set_ylim([-0.5, 0.5])
     ax.set_xlabel("$k$")
     ax.set_ylabel(r"$\rho_k$")
     ax.legend()
 
-    axins.hist(ISIs_thr, bins=20, density=True, alpha=0.7)
-    axins.hist(ISIs_iso, bins=20, density=True, alpha=0.7)
-    plt.savefig(home + "/Data/isochrones/correlations_threshold_vs_isochrone.pdf", transparent=True)
+    axins1.hist(ISIs_thr, bins=20, density=True, alpha=0.7)
+    axins1.hist(ISIs_iso, bins=20, density=True, alpha=0.7)
+
+    isochrone = np.loadtxt(home + "/Data/isochrones/isochrones_file_mu5.00_{:.2f}.dat".format(phase))
+    axins2.scatter(v_s, a_s, s=3, c="C0")
+    axins2.plot([x[0] for x in isochrone], [x[1] for x in isochrone], c="C1")
+    plt.savefig(home + "/Data/isochrones/correlations_threshold_vs_isochrone_D{:.2f}_phi{:.2f}.pdf".format(D, phase), transparent=True)
 
     plt.show()
