@@ -134,10 +134,10 @@ def expand_isochrone(isochrone, ISI, r):
                     v_new, a_new = isochrone[-1]
                     v_fix, a_fix = isochrone[-2]
                     if T > ISI:
-                        print("ISI too long, {:.4f}".format(abs(T - ISI) / ISI))
+                        print("ISI too long, {:.4f}, v={:.3f}, a={:.3f}".format(abs(T - ISI) / ISI, v_new, a_new))
                         v, a = move_to_reduce_return_time(v_new, a_new, v_fix, a_fix, r)
                     else:
-                        print("ISI too short, {:.4f}".format(abs(T - ISI) / ISI))
+                        print("ISI too short, {:.4f}, v={:.3f}, a={:.3f}".format(abs(T - ISI) / ISI, v_new, a_new))
                         v, a = move_to_increase_return_time(v_new, a_new, v_fix, a_fix, r)
                     isochrone[-1] = [v, a]
                 else:
@@ -153,10 +153,10 @@ def expand_isochrone(isochrone, ISI, r):
                 if abs(T - ISI) / ISI > 0.0005:
                     v_new, a_new = isochrone[-1]
                     if T > ISI:
-                        print("ISI too long, {:.4f}".format(abs(T - ISI) / ISI))
+                        print("ISI too long, {:.4f}, v={:.3f}, a={:.3f}".format(abs(T - ISI) / ISI, v_new, a_new))
                         a = a_new - 0.0001
                     else:
-                        print("ISI too short, {:.4f}".format(abs(T - ISI) / ISI))
+                        print("ISI too short, {:.4f}, v={:.3f}, a={:.3f}".format(abs(T - ISI) / ISI, v_new, a_new))
                         a = a_new + 0.0001
                     isochrone[-1] = [v_new, a]
                 else:
@@ -468,10 +468,10 @@ if __name__ == "__main__":
             v_new, a_new = isochrone_right[-1]
             v_fix, a_fix = isochrone_right[-2]
             if T > isi:
-                print("ISI too long, {:.4f}".format(abs(T - isi) / isi))
+                print("ISI too long, {:.4f}, v={:.3f}, a={:.3f}".format(abs(T - isi) / isi, v_new, a_new))
                 v, a = move_to_reduce_return_time(v_new, a_new, v_fix, a_fix, r)
             else:
-                print("ISI too short, {:.4f}".format(abs(T - isi) / isi))
+                print("ISI too short, {:.4f}, v={:.3f}, a={:.3f}".format(abs(T - isi) / isi, v_new, a_new))
                 v, a = move_to_increase_return_time(v_new, a_new, v_fix, a_fix, r)
             isochrone_right[-1] = [v, a]
         else:
@@ -491,16 +491,15 @@ if __name__ == "__main__":
             v_new, a_new = isochrone_left[-1]
             v_fix, a_fix = isochrone_left[-2]
             if T > isi:
-                print("ISI too long, {:.4f}".format(abs(T - isi) / isi))
+                print("ISI too long, {:.4f}, v={:.3f}, a={:.3f}".format(abs(T - isi) / isi, v_new, a_new))
                 v, a = move_to_reduce_return_time(v_new, a_new, v_fix, a_fix, r)
             else:
-                print("ISI too short, {:.4f}".format(abs(T - isi) / isi))
+                print("ISI too short, {:.4f}, v={:.3f}, a={:.3f}".format(abs(T - isi) / isi, v_new, a_new))
                 v, a = move_to_increase_return_time(v_new, a_new, v_fix, a_fix, r)
             isochrone_left[-1] = [v, a]
         else:
             on_isochrone = True
     isochrone_left = expand_isochrone(isochrone_left, isi, r)
-
 
     # Check if Isochrone is good
     v, a = isochrone_right[-1]

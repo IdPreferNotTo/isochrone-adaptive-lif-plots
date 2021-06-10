@@ -87,7 +87,7 @@ def intersect(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2):
 if __name__ == "__main__":
     # Initialize Adaptive leaky IF model
     mu: float = 5.0
-    D: float = 0.1
+    D: float = 1.00
     tau_a: float = 2.0
     delta_a: float = 1.0
 
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     v_thr: float = 1
     dt: float = 0.0001
 
-    phase:float = 1*np.pi/2 #1.57. 3.14, 4.71
+    phase:float = 3*np.pi/2 #1.57. 3.14, 4.71
 
     alif = stochastic_adaptive_leaky_if(mu, tau_a, delta_a, D, v_res, v_thr, dt)
     print("Get limit cycle")
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     ISIs = []
     t = 0
     spikes = 0
-    while spikes < 100:
+    while spikes < 5000:
         v, a, spike = alif.forward_stochastic(v, a)
         t += dt
         if spike == True:
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     isochrone = np.loadtxt(home + "/Data/isochrones/isochrones_file_mu5.00_{:.2f}.dat".format(phase))
 
     ref_steps = 0
-    while spikes < 100:
+    while spikes < 5000:
         # Let the point (v, a) evolve until it hits the presumed isochrone
         v_before = v
         a_before = a
@@ -143,9 +143,7 @@ if __name__ == "__main__":
         # For every segment of the isochrone check if this segment and the segment that describes
         # the change of v, a ((v_tmp, a_tmp), (v, a)) intersect.
         for (v_iso0, a_iso0), (v_iso1, a_iso1) in zip(isochrone[:-1], isochrone[1:]):
-            if v_iso0 == 1 and v_iso1 == 0:
-                continue
-            if v_iso0 == 0 and v_iso1 == 1:
+            if abs(v_iso0 - v_iso1) > 0.5:
                 continue
             passed_isochrone = intersect(v_before, a_before, v_after, a_after, v_iso0, a_iso0, v_iso1, a_iso1)
             if passed_isochrone and ref_steps > 2000:

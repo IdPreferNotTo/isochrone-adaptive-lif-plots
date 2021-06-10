@@ -21,7 +21,7 @@ def k_corr(data1, data2, k):
 
 if __name__ == "__main__":
     home = os.path.expanduser("~")
-    phase = 1*np.pi/2 #1.57, 3.14, 4.71
+    phase = 3*np.pi/2 #1.57, 3.14, 4.71
     D = 0.01
     #ISIs_thr = np.loadtxt(home + "/Data/isochrones/ISI_thr_D{:.1f}_phi{:.2f}.dat".format(D, phase))
     #ISIs_iso = np.loadtxt(home + "/Data/isochrones/ISI_iso_D{:.1f}_phi{:.2f}.dat".format(D, phase))
@@ -48,11 +48,11 @@ if __name__ == "__main__":
         k_corr_ISI_iso.append(k_corr(ISIs_iso, ISIs_iso, k)/var_ISI_iso)
 
 
-    fig = plt.figure(tight_layout=True, figsize=(4, 6 / 2))
+    fig = plt.figure(tight_layout=True)
     gs = gs.GridSpec(1, 1)
     ax = fig.add_subplot(gs[:])
-    axins1 = inset_axes(ax, width="50%", height="40%", loc=4)
-    axins2 = inset_axes(ax, width="50%", height="40%", loc=2)
+    axins1 = inset_axes(ax, width="40%", height="30%", loc=4)
+    axins2 = inset_axes(ax, width="40%", height="30%", loc=2)
     ax.scatter(ks, k_corr_ISI_thr, label=r"Threshold", zorder=2)
     ax.scatter(ks, k_corr_ISI_iso, label=r"Isochrone", zorder=2)
     ax.axhline(0, ls="--", c="C7", zorder=1)

@@ -127,7 +127,7 @@ if __name__ == "__main__":
             a_iso.append(a1)
 
 
-    fig = plt.figure(tight_layout=True, figsize=(6, 9 / 2))
+    fig = plt.figure(tight_layout=True, figsize=(6, 4))
     gs = gs.GridSpec(1, 1)
     ax = fig.add_subplot(gs[:])
     ax.set_xlabel("$v$")
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     ax.axvline(0, c="k", ls=":")
     ax.legend(fancybox=False, framealpha=1.)
 
-    x, y = np.meshgrid(np.linspace(0, 1, 20), np.linspace(1, 5, 20))
+    x, y = np.meshgrid(np.linspace(-1, 1, 40), np.linspace(1, 5, 20))
     dv = mu - x - y
     da = -y/tau_a
     dx = np.sqrt(dv**2 + da**2)
@@ -152,7 +152,7 @@ if __name__ == "__main__":
     ax.scatter(v_st, a_st, c="C0", s=2, zorder=5)
 
 
-    ax.set_xlim([-0.1, 1.1])
+    ax.set_xlim([-1.1, 1.1])
     # Hide the right and top spines
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
