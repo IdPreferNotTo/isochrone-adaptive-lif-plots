@@ -107,7 +107,8 @@ if __name__ == "__main__":
     v_lc, a_lc, ts = alif.limit_cycle()
 
     home = os.path.expanduser("~")
-    isochrone = np.loadtxt(home + "/Data/isochrones/isochrones_file_mu5.00_3.14.dat")
+    phase: float  = 1 * np.pi / 2
+    isochrone = np.loadtxt(home + "/Data/isochrones/isochrones_file_mu5.00_{:.2f}.dat".format(phase))
     stochstic_traj = np.loadtxt(home + "/Data/isochrones/stochastic_trajectory_D0.01_3.14.dat")
 
     v_isos = []
@@ -133,12 +134,12 @@ if __name__ == "__main__":
     ax.set_xlabel("$v$")
     ax.set_ylabel("$a$")
     ax.plot(v_lc, a_lc, c="k", label="Limit cycle")
-    ax.plot(v_isos[0], a_isos[0], c="k", ls="--", label="Isochrone $\phi = \pi$")
+    ax.plot(v_isos[0], a_isos[0], c="k", ls=":", label="Isochrone $\phi = {:.2f}$".format(phase))
     for v_iso, a_iso in zip(v_isos[1:], a_isos[1:]):
-        ax.plot(v_iso, a_iso, c="k", ls="--")
+        ax.plot(v_iso, a_iso, c="k", ls=":")
 
-    ax.axvline(1, c="k", ls=":")
-    ax.axvline(0, c="k", ls=":")
+    ax.axvline(1, c="k")
+    ax.axvline(0, c="k", ls="--")
     ax.legend(fancybox=False, framealpha=1.)
 
     x, y = np.meshgrid(np.linspace(-1, 1, 40), np.linspace(1, 5, 20))
@@ -160,5 +161,5 @@ if __name__ == "__main__":
     # Only show ticks on the left and bottom spines
     ax.yaxis.set_ticks_position('left')
     ax.xaxis.set_ticks_position('bottom')
-    plt.savefig(home + "/Data/isochrones/Trajectory_Isochrone_mu{:.2f}_D{:.2f}.pdf".format(mu, 0.01))
+    plt.savefig(home + "/Data/isochrones/Trajectory_Isochrone_mu{:.2f}_D{:.2f}_phase{:.2f}.pdf".format(mu, 0.01, phase))
     plt.show()

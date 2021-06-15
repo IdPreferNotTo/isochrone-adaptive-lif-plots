@@ -22,7 +22,7 @@ def k_corr(data1, data2, k):
 if __name__ == "__main__":
     home = os.path.expanduser("~")
     phase = 3*np.pi/2 #1.57, 3.14, 4.71
-    D = 0.01
+    D = 1.0
     #ISIs_thr = np.loadtxt(home + "/Data/isochrones/ISI_thr_D{:.1f}_phi{:.2f}.dat".format(D, phase))
     #ISIs_iso = np.loadtxt(home + "/Data/isochrones/ISI_iso_D{:.1f}_phi{:.2f}.dat".format(D, phase))
 
