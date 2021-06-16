@@ -64,7 +64,7 @@ class stochastic_adaptive_leaky_if():
 if __name__ == "__main__":
     # Initialize Adaptive leaky IF model
     mu: float = 5.0
-    D: float = 0.01
+    D: float = 1.00
     tau_a: float = 2.0
     delta_a: float = 1.0
 

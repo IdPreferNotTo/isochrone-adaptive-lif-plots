@@ -2,6 +2,20 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
+def cut_isochrone_into_branches(isochrone):
+    branches = []
+    branch = []
+    for p in isochrone:
+        # p = (v, a)
+        if p[0] < 1.:
+            branch.append(p)
+        else:
+            branch.append(p)
+            branches.append(list(branch))
+            branch.clear()
+    return branches
+
+
 class stochastic_adaptive_leaky_if():
     def __init__(self, mu, tau_a, delta_a, D, v_r, v_t, dt):
         self.mu = mu
@@ -87,7 +101,7 @@ def intersect(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2):
 if __name__ == "__main__":
     # Initialize Adaptive leaky IF model
     mu: float = 5.0
-    D: float = 1.00
+    D: float = 0.20
     tau_a: float = 2.0
     delta_a: float = 1.0
 
@@ -106,7 +120,7 @@ if __name__ == "__main__":
     ISIs = []
     t = 0
     spikes = 0
-    while spikes < 5000:
+    while spikes < 1000:
         v, a, spike = alif.forward_stochastic(v, a)
         t += dt
         if spike == True:
@@ -125,8 +139,15 @@ if __name__ == "__main__":
     home = os.path.expanduser("~")
     isochrone = np.loadtxt(home + "/Data/isochrones/isochrones_file_mu5.00_{:.2f}.dat".format(phase))
 
+    branches = cut_isochrone_into_branches(isochrone)
+
     ref_steps = 0
-    while spikes < 5000:
+
+    # I am starting on branch 1 (the number is arbitrary) thus I need to cross branch 0.
+    nr_branch_start = 1
+    nr_branch_stop = 0
+
+    while spikes < 1000:
         # Let the point (v, a) evolve until it hits the presumed isochrone
         v_before = v
         a_before = a
@@ -137,11 +158,12 @@ if __name__ == "__main__":
         else:
             v_after = 1.
             a_after = a - delta_a
-            has_spiked = True
+            nr_branch_stop += 1
         t += dt
         ref_steps += 1
         # For every segment of the isochrone check if this segment and the segment that describes
         # the change of v, a ((v_tmp, a_tmp), (v, a)) intersect.
+        isochrone = branches[nr_branch_stop]
         for (v_iso0, a_iso0), (v_iso1, a_iso1) in zip(isochrone[:-1], isochrone[1:]):
             if abs(v_iso0 - v_iso1) > 0.5:
                 continue
@@ -150,6 +172,8 @@ if __name__ == "__main__":
                 print(spikes)
                 ref_steps = 0
                 spikes += 1
+                nr_branch_stop -= 1
+                print(nr_branch_stop)
                 ISIs_iso.append(t)
                 V_iso_pass.append(v_after)
                 A_iso_pass.append(a_after)

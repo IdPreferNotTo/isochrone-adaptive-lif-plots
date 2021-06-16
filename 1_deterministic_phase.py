@@ -287,7 +287,7 @@ if __name__ == "__main__":
     v_lc, a_lc, ts = alif.limit_cycle()
 
     # Use point of the Limit Cycle with certain phase as initial point to construct isochrone that belongs to that phase
-    phase = 1*np.pi/2
+    phase = 2*np.pi/2
     idx_phase = int(len(v_lc)*(phase)/(2*np.pi))
     v_lc0 = v_lc[idx_phase]
     a_lc0 = a_lc[idx_phase]
@@ -310,23 +310,26 @@ if __name__ == "__main__":
     iso_left_b1 = iso.construct_isochrone_branch_left_from_point(v_lc0, a_lc0, vres, 0, insert_point = 0)
     iso_right_b1 = iso.construct_isochrone_branch_right_from_point(v_lc0, a_lc0, vmax)
 
-    v_ub0, a_ub0 = iso.start_point_upper_branch
-    v_lb0, a_lb0 = iso.start_point_lower_branch
+    v0_ub, a0_ub = iso.start_point_upper_branch
+    v0_lb, a0_lb = iso.start_point_lower_branch
 
     # Initial values are not automatically added to the whole isochrone. This is convenient most of the time but
     # requires to manually add this point if wanted.
-    iso.isochrone.insert(0, [v_lb0, a_lb0])
-    iso_left_b0 = iso.construct_isochrone_branch_left_from_point(v_lb0, a_lb0, vres, 0, insert_point=0)
+    iso.isochrone.insert(0, [v0_lb, a0_lb])
+    iso_left_b0 = iso.construct_isochrone_branch_left_from_point(v0_lb, a0_lb, vres, 0, insert_point=0)
+
+    v0_lb, a0_lb = iso.start_point_lower_branch
+
     v_b1_1, a_b1_1 = iso_left_b1[0]
     l = len(iso_left_b0)
-
     iso_left_left_b1 = iso.construct_isochrone_branch_left_from_point(v_b1_1, a_b1_1, vres, vmin, insert_point=l)
 
     l = iso.get_isochrone()
-    iso_left_b2 = iso.construct_isochrone_branch_left_from_point(v_ub0, a_ub0, vres, vmin, insert_point = len(l))
+    iso_left_b2 = iso.construct_isochrone_branch_left_from_point(v0_ub, a0_ub, vres, vmin, insert_point = len(l))
 
-    iso.isochrone.append([v_ub0, a_ub0])
-    iso_right_b2 = iso.construct_isochrone_branch_right_from_point(v_ub0, a_ub0, vmax)
+
+    iso.isochrone.append([v0_ub, a0_ub])
+    iso_right_b2 = iso.construct_isochrone_branch_right_from_point(v0_ub, a0_ub, vmax)
 
 
     fig = plt.figure(tight_layout=True, figsize=(6, 9 / 2))
@@ -337,8 +340,6 @@ if __name__ == "__main__":
     ax.plot(v_lc, a_lc, c="k")
     isochrone = iso.get_isochrone()
     ax.plot([x[0] for x in isochrone], [x[1] for x in isochrone])
-    #ax.plot([x[0] for x in isochrone_right], [x[1] for x in isochrone_right])
-
 
     # Check if Isochrone is good
     v, a = isochrone[-1]

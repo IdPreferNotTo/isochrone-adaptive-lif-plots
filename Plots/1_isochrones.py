@@ -107,9 +107,9 @@ if __name__ == "__main__":
     v_lc, a_lc, ts = alif.limit_cycle()
 
     home = os.path.expanduser("~")
-    phase: float  = 1 * np.pi / 2
+    phase: float  = 2 * np.pi / 2
     isochrone = np.loadtxt(home + "/Data/isochrones/isochrones_file_mu5.00_{:.2f}.dat".format(phase))
-    stochstic_traj = np.loadtxt(home + "/Data/isochrones/stochastic_trajectory_D0.01_3.14.dat")
+    stochstic_traj = np.loadtxt(home + "/Data/isochrones/stochastic_trajectory_D1.00_3.14.dat")
 
     v_isos = []
     a_isos = []
