@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gs
 import os
 
+import styles as st
+
 class adaptive_leaky_if():
     def __init__(self, mu, tau_a, delta_a, v_r, v_t, dt):
         self.mu = mu
@@ -106,54 +108,71 @@ if __name__ == "__main__":
     print(isi)
     v_lc, a_lc, ts = alif.limit_cycle()
 
-    home = os.path.expanduser("~")
-    phase: float  = 2 * np.pi / 2
-    isochrone = np.loadtxt(home + "/Data/isochrones/isochrones_file_mu5.00_{:.2f}.dat".format(phase))
-    stochstic_traj = np.loadtxt(home + "/Data/isochrones/stochastic_trajectory_D1.00_3.14.dat")
-
-    v_isos = []
-    a_isos = []
-    v_iso = []
-    a_iso = []
-    for (v1, a1) in isochrone:
-        if v1 == 1:
-            v_iso.append(v1)
-            a_iso.append(a1)
-            v_isos.append(list(v_iso))
-            a_isos.append(list(a_iso))
-            v_iso = []
-            a_iso = []
-        else:
-            v_iso.append(v1)
-            a_iso.append(a1)
-
-
-    fig = plt.figure(tight_layout=True, figsize=(6, 4))
+    st.set_default_plot_style()
+    fig = plt.figure(tight_layout=True, figsize=(4, 3))
     gs = gs.GridSpec(1, 1)
     ax = fig.add_subplot(gs[:])
     ax.set_xlabel("$v$")
     ax.set_ylabel("$a$")
-    ax.plot(v_lc, a_lc, c="k", label="Limit cycle")
-    ax.plot(v_isos[0], a_isos[0], c="k", ls=":", label="Isochrone $\phi = {:.2f}$".format(phase))
-    for v_iso, a_iso in zip(v_isos[1:], a_isos[1:]):
-        ax.plot(v_iso, a_iso, c="k", ls=":")
+    ax.axhline(a_lc[0], c="k", ls=":")
+    ax.axhline(a_lc[-1], c ="k", ls=":")
+    ax.arrow(1.05, a_lc[-1], 0, a_lc[0] - a_lc[-1], fc="k", length_includes_head=True, head_width=0.03,
+             head_length=0.1, lw=0.5, clip_on=False)
+    ax.arrow(1.05, a_lc[0], 0, a_lc[-1] - a_lc[0], fc="k", length_includes_head=True, head_width=0.03,
+             head_length=0.1, lw=0.5, clip_on=False)
+    ax.text(1.1, (a_lc[0] + a_lc[-1])/2, "$\Delta$", va="center", ha="center")
 
+    home = os.path.expanduser("~")
+    phase1: float = 1 * np.pi / 2
+    phase2: float = 2 * np.pi / 2
+    phase3: float = 3 * np.pi / 2
+    phase4: float = 4 * np.pi / 2
+    phases = [phase1, phase2, phase3, phase4]
+    isochrone1 = np.loadtxt(
+        home + f"/CLionProjects/PhD/alif_deterministic_isochrone/out/isochrone_mu{mu:.1f}_taua2.0_delta1.0_phase{phase1:.2f}.dat")
+    isochrone2 = np.loadtxt(
+        home + f"/CLionProjects/PhD/alif_deterministic_isochrone/out/isochrone_mu{mu:.1f}_taua2.0_delta1.0_phase{phase2:.2f}.dat")
+    isochrone3 = np.loadtxt(
+        home + f"/CLionProjects/PhD/alif_deterministic_isochrone/out/isochrone_mu{mu:.1f}_taua2.0_delta1.0_phase{phase3:.2f}.dat")
+    isochrone4 = np.loadtxt(
+        home + f"/CLionProjects/PhD/alif_deterministic_isochrone/out/isochrone_mu{mu:.1f}_taua2.0_delta1.0_phase{phase4:.2f}.dat")
+    isochrones = [isochrone1, isochrone2, isochrone3, isochrone4]
+
+    for n, (phase, isochrone) in enumerate(zip(phases, isochrones)):
+        v_isos = []
+        a_isos = []
+        v_iso = []
+        a_iso = []
+        for (v1, a1) in isochrone:
+            if v1 == 1:
+                v_iso.append(v1)
+                a_iso.append(a1)
+                v_isos.append(list(v_iso))
+                a_isos.append(list(a_iso))
+                v_iso = []
+                a_iso = []
+            else:
+                v_iso.append(v1)
+                a_iso.append(a1)
+        ax.plot(v_isos[0], a_isos[0], c=st.colors[n], label="$\phi = {:.2f}$".format(phase))
+        for v_iso, a_iso in zip(v_isos[1:], a_isos[1:]):
+            ax.plot(v_iso, a_iso, c=st.colors[n])
+
+    ax.plot(v_lc, a_lc, c="k", label="LC")
     ax.axvline(1, c="k")
     ax.axvline(0, c="k", ls="--")
-    ax.legend(fancybox=False, framealpha=1.)
+    #ax.legend(fancybox=False, framealpha=1., loc=3, ncol=2)
 
-    x, y = np.meshgrid(np.linspace(-1, 1, 40), np.linspace(1, 5, 20))
-    dv = mu - x - y
-    da = -y/tau_a
-    dx = np.sqrt(dv**2 + da**2)
-    strm = ax.streamplot(x, y, dv, da, color=dx, linewidth=0.75, cmap="viridis")
-    fig.colorbar(strm.lines)
-
-    v_st, a_st = np.transpose(stochstic_traj[:6300])
-    ax.scatter(v_st, a_st, c="C0", s=2, zorder=5)
+    #v_st, a_st = np.transpose(stochstic_traj)
+    #ax.scatter(v_st, a_st, c="C0", s=2, zorder=5)
 
 
-    ax.set_xlim([-1.1, 1.1])
+
+    ax.set_xlim([-0.1, 1.1])
+    ax.set_ylim([1, 4])
+    ax.set_yticks([1, 2, 3, 4])
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels(["$v_R$", "$v_T$"])
     # Hide the right and top spines
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
@@ -161,5 +180,9 @@ if __name__ == "__main__":
     # Only show ticks on the left and bottom spines
     ax.yaxis.set_ticks_position('left')
     ax.xaxis.set_ticks_position('bottom')
-    plt.savefig(home + "/Data/isochrones/Trajectory_Isochrone_mu{:.2f}_D{:.2f}_phase{:.2f}.pdf".format(mu, 0.01, phase))
+
+
+    #ax.grid()
+    plt.savefig(home + "/Desktop/Presentations/Neuro MRT Phase/Figures/7_isochrones_LIFA.png",
+                transparent=True)
     plt.show()
