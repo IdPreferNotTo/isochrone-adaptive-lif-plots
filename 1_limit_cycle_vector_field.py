@@ -157,7 +157,7 @@ if __name__ == "__main__":
     # v_st, a_st = np.transpose(stochstic_traj)
     # ax.scatter(v_st, a_st, c="C0", s=2, zorder=5)
     home = os.path.expanduser("~")
-    folder = "/CLionProjects/PhD/alif_pass_isochrone/out/"
+    folder = "/Data/isochrone/trajectories/"
     vat_stoch = np.loadtxt(home + folder + "v_a_t_alif_mu2.0_taua2.0_delta1.0_D0.10_phase6.28_run0_fig1.dat")
     t_st, v_st, a_st, idx = np.transpose(vat_stoch)
 
@@ -290,5 +290,5 @@ if __name__ == "__main__":
     ax1.text(-0.2, 1.00, "(a)", size=12, transform=ax1.transAxes)
     ax3.text(-0.2, 1.10, "(b)", size=12, transform=ax3.transAxes)
     #ax3.text(-0.2, 1.00, "C", size=12, transform=ax3.transAxes)
-    plt.savefig(home + "/Data/isochrones/fig1_c.pdf")
+    #plt.savefig(home + "/Data/isochrones/fig1_c.pdf")
     plt.show()

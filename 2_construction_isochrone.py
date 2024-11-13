@@ -293,6 +293,6 @@ if __name__ == "__main__":
     ax2.text(-0.175, 1.00, "(b)", size=10, transform=ax2.transAxes)
     ax3.text(-0.175, 1.00, "(c)", size=10, transform=ax3.transAxes)
     ax4.text(-0.175, 1.00, "(d)", size=10, transform=ax4.transAxes)
-    plt.savefig(home + "/Data/isochrones/fig2.pdf", transparent=True)
+    #plt.savefig(home + "/Data/isochrones/fig2.pdf", transparent=True)
 
     plt.show()

@@ -72,10 +72,10 @@ if __name__ == "__main__":
     phase = 6.28
     run = 0
     home = os.path.expanduser("~")
-    folder = "/CLionProjects/PhD/alif_pass_isochrone/out/"
+    folder = "/Data/isochrone/intervals/"
     file_isi = "ISIs_alif_mu{:.1f}_taua2.0_delta1.0_D{:.2f}_phase{:.2f}_run{:d}.dat".format(mu, D, phase, run)
     file_ipi = "IPIs_alif_mu{:.1f}_taua2.0_delta1.0_D{:.2f}_phase{:.2f}_run{:d}.dat".format(mu, D, phase, run)
-    file_ihi = "IPIs_very_flat_alif_mu{:.1f}_taua2.0_delta1.0_D{:.2f}_phase{:.2f}_run{:d}.dat".format(mu, D, phase, run)
+    file_ihi = "IHIs_alif_mu{:.1f}_taua2.0_delta1.0_D{:.2f}_phase{:.2f}_run{:d}.dat".format(mu, D, phase, run)
     ISIs = np.loadtxt(home + folder + file_isi)
     data_ipi = np.loadtxt(home + folder + file_ipi)
     data_ihi = np.loadtxt(home + folder + file_ihi)
@@ -201,5 +201,5 @@ if __name__ == "__main__":
     ax2.legend(fancybox=False, edgecolor="k", framealpha=1.)
     ax3.legend(fancybox=False, edgecolor="k", framealpha=1.)
 
-    plt.savefig(home + "/Data/isochrones/fig4.pdf", transparent=True)
+    #plt.savefig(home + "/Data/isochrones/fig4.pdf", transparent=True)
     plt.show()

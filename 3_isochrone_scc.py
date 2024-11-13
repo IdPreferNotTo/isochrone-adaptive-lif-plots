@@ -130,11 +130,11 @@ if __name__ == "__main__":
     #ISIs_thr = np.loadtxt(home + "/Data/isochrones/ISI_thr_D{:.1f}_phi{:.2f}.dat".format(D, phase))
     #ISIs_iso = np.loadtxt(home + "/Data/isochrones/ISI_iso_D{:.1f}_phi{:.2f}.dat".format(D, phase))
 
-    ISIs = np.loadtxt(home + "/CLionProjects/PhD/alif_pass_isochrone/out/ISIs_alif_mu{:.1f}_taua2.0_delta1.0_D{:.2f}_phase{:.2f}_run{:d}.dat".format(mu, D, phase, run))
-    data_IPIs = np.loadtxt(home + "/CLionProjects/PhD/alif_pass_isochrone/out/IPIs_alif_mu{:.1f}_taua2.0_delta1.0_D{:.2f}_phase{:.2f}_run{:d}.dat".format(mu, D, phase, run))
+    ISIs = np.loadtxt(home + "/Data/isochrone/intervals/ISIs_alif_mu{:.1f}_taua2.0_delta1.0_D{:.2f}_phase{:.2f}_run{:d}.dat".format(mu, D, phase, run))
+    data_IPIs = np.loadtxt(home + "/Data/isochrone/intervals/IPIs_alif_mu{:.1f}_taua2.0_delta1.0_D{:.2f}_phase{:.2f}_run{:d}.dat".format(mu, D, phase, run))
     IPIs, v_pass, a_pass, nr_iso_cross = np.transpose(data_IPIs)
-    data_IPIs_flat = np.loadtxt(home + "/CLionProjects/PhD/alif_pass_isochrone/out/IPIs_very_flat_alif_mu{:.1f}_taua2.0_delta1.0_D{:.2f}_phase{:.2f}_run{:d}.dat".format(mu, D, phase, run))
-    IPIs_flat, v_pass_flat, a_pass_flat, nr_iso_cross_flat = np.transpose(data_IPIs_flat)
+    data_IHIs = np.loadtxt(home + "/Data/isochrone/intervals/IHIs_alif_mu{:.1f}_taua2.0_delta1.0_D{:.2f}_phase{:.2f}_run{:d}.dat".format(mu, D, phase, run))
+    IPIs_flat, v_pass_flat, a_pass_flat, nr_iso_cross_flat = np.transpose(data_IHIs)
 
     print(min(IPIs), max(IPIs))
     print(np.where(IPIs==min(IPIs)))
@@ -223,7 +223,7 @@ if __name__ == "__main__":
     v_lc, a_lc, ts = alif.limit_cycle()
     print(a_lc[0], a_lc[-1])
     home = os.path.expanduser("~")
-    isochrone = np.loadtxt(home + "/CLionProjects/PhD/alif_deterministic_isochrone/out/isochrone_mu{:.1f}_taua2.0_delta1.0_phase{:.2f}.dat".format(mu, phase))
+    isochrone = np.loadtxt(home + "/Data/isochrone/isochrone_mu{:.1f}_taua2.0_delta1.0_phase{:.2f}.dat".format(mu, phase))
 
     v_isos = []
     a_isos = []
@@ -265,5 +265,5 @@ if __name__ == "__main__":
 
     ax_left.text(-0.2, 1.00, "(a)", size=12, transform=ax_left.transAxes)
     ax_right.text(-0.2, 1.00, "(b)", size=12, transform=ax_right.transAxes)
-    plt.savefig(home + "/Data/isochrones/fig3_b.pdf", transparent=True)
+    #plt.savefig(home + "/Data/isochrones/fig3_b.pdf", transparent=True)
     plt.show()
